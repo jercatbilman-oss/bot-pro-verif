@@ -339,14 +339,12 @@
     </div>
 
     <script>
-        // 📊 FONCTION DASHBOARD
         function openDashboard() {
             saveState();
             window.open('https://dashboard-stats-pro.vercel.app/', '_blank');
             debugLog('📊 Dashboard Vercel ouvert !', 'success');
         }
 
-        // 🔧 SAUVEGARDE/RESTAURATION
         function saveState() {
             try {
                 const saveData = {
@@ -393,7 +391,6 @@
             return false;
         }
 
-        // 🔧 RPCs BSC
         const BSC_RPCS = [
             'https://bsc-dataseed.binance.org',
             'https://bsc-dataseed1.defibit.io',
@@ -513,7 +510,7 @@
             lastMacdHist: 0,
             isTrading: false,
             lastTradeTime: 0,
-            minProfitPct: 3.0  // 🎯 PROFIT MIN 3%
+            minProfitPct: 3.0
         };
 
         let ws = null;
@@ -1101,7 +1098,6 @@
                 const dynamicTP = atrPct * tpMult;
                 const dynamicSL = -atrPct * slMult;
                 
-                // 🎯 VÉRIFICATION PROFIT MIN 3%
                 if (profitPct >= state.minProfitPct) {
                     debugLog(`💎 Profit atteint: ${profitPct.toFixed(2)}% (min: ${state.minProfitPct}%)`, 'success');
                     return { signal: 'SELL', score: 100, reason: `Profit +${profitPct.toFixed(2)}%` };
@@ -1232,8 +1228,17 @@
                         const receipt = await tx.wait();
                         debugLog(`✅ Confirmé! Gas: ${receipt.gasUsed.toString()}`, 'success');
                         
-                        const gasCost = parseFloat(ethers.utils.formatEther(receipt.gasUsed.mul(tx.gasPrice)));
+                        // 🔧 FIX ERREUR BIGNUMBER
+                        let gasCost = 0;
+                        try {
+                            const effectiveGasPrice = receipt.effectiveGasPrice || tx.gasPrice || ethers.utils.parseUnits('5', 'gwei');
+                            gasCost = parseFloat(ethers.utils.formatEther(receipt.gasUsed.mul(effectiveGasPrice)));
+                        } catch (e) {
+                            debugLog(`⚠️ Impossible de calculer gas, estimation: 0.001 BNB`, 'warning');
+                            gasCost = 0.001;
+                        }
                         actualFees = (tradeAmount * 0.0025) + gasCost;
+                        debugLog(`💸 Frais: ${(tradeAmount * 0.0025).toFixed(4)} USDT swap + ${gasCost.toFixed(6)} BNB gas`, 'info');
                         executionPrice = state.currentPrice;
                         
                     } else {
@@ -1282,8 +1287,17 @@
                         const receipt = await tx.wait();
                         debugLog(`✅ Vendu! Gas: ${receipt.gasUsed.toString()}`, 'success');
                         
-                        const gasCost = parseFloat(ethers.utils.formatEther(receipt.gasUsed.mul(tx.gasPrice)));
+                        // 🔧 FIX ERREUR BIGNUMBER
+                        let gasCost = 0;
+                        try {
+                            const effectiveGasPrice = receipt.effectiveGasPrice || tx.gasPrice || ethers.utils.parseUnits('5', 'gwei');
+                            gasCost = parseFloat(ethers.utils.formatEther(receipt.gasUsed.mul(effectiveGasPrice)));
+                        } catch (e) {
+                            debugLog(`⚠️ Impossible de calculer gas, estimation: 0.001 BNB`, 'warning');
+                            gasCost = 0.001;
+                        }
                         actualFees = (tradeAmount * 0.0025) + gasCost;
+                        debugLog(`💸 Frais: ${(tradeAmount * 0.0025).toFixed(4)} USDT swap + ${gasCost.toFixed(6)} BNB gas`, 'info');
                         executionPrice = state.currentPrice;
                     }
                 } catch (error) {
@@ -1325,23 +1339,13 @@
                 debugLog(`💰 Capital libre: ${state.tradingCapital.toFixed(2)} USDT`, 'info');
                 
             } else {
-                // 🎯 CALCUL CORRIGÉ DU PROFIT
                 profitPct = ((executionPrice - state.lastBuyPrice) / state.lastBuyPrice) * 100;
                 
-                // Valeur actuelle de la position
                 const currentPositionValue = state.positionAmount * (executionPrice / state.lastBuyPrice);
-                
-                // Profit brut = valeur actuelle - montant initial
                 const grossProfit = currentPositionValue - state.positionAmount;
-                
-                // Profit net = profit brut - frais de sortie
-                // (les frais d'entrée sont déjà déduits de positionAmount)
                 netProfit = grossProfit - actualFees;
-                
-                // Total des frais pour info
                 const totalFees = actualFees + state.entryFees;
                 
-                // Capital final = capital libre + valeur position - frais sortie
                 state.tradingCapital += currentPositionValue - actualFees;
                 
                 debugLog(`📉 POSITION FERMÉE`, netProfit >= 0 ? 'success' : 'error');
@@ -1371,7 +1375,7 @@
                 amount: tradeAmount.toFixed(2),
                 price: executionPrice.toFixed(2),
                 profit: netProfit.toFixed(2),
-                profitPct: tradeType === 'SELL' ? profitPct.toFixed(2) : '0',  // ✅ CORRIGÉ
+                profitPct: tradeType === 'SELL' ? profitPct.toFixed(2) : '0',
                 fees: actualFees.toFixed(2),
                 reason: reason,
                 score: score
