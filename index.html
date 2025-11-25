@@ -40,7 +40,7 @@
                         🚀 Bot Trading PRO - Optimisé 2025
                     </h1>
                     <p class="text-gray-400">
-                        ⚡ RSI+MACD+Bollinger • 🎯 TP Dynamique • 📈 Balance OK
+                        ⚡ RSI+MACD+Bollinger • 🎯 TP Dynamique +3% • 📈 Balance OK
                     </p>
                 </div>
                 
@@ -88,6 +88,37 @@
             </div>
         </div>
 
+        <!-- Capital Modal -->
+        <div id="capitalModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="glass-effect rounded-2xl p-6 max-w-md w-full border-2 border-green-500/50">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-green-400">💰 Modifier Capital</h3>
+                    <button onclick="closeCapitalModal()" class="text-2xl hover:text-red-400">✕</button>
+                </div>
+                
+                <div class="bg-yellow-500/20 border border-yellow-500 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-yellow-300">
+                        <strong>ATTENTION:</strong> Arrêtez le bot avant de modifier le capital.
+                    </p>
+                </div>
+                
+                <div class="mb-4">
+                    <p class="text-sm text-gray-400 mb-2">Capital actuel: <span class="text-white font-bold" id="currentCapitalModal">0.00</span> USDT</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Nouveau Capital (USDT)</label>
+                        <input type="number" id="newCapitalInput" placeholder="Ex: 200" class="w-full glass-effect rounded-lg px-4 py-3 focus:outline-none focus:border-green-400 border-2 border-gray-600">
+                    </div>
+                    
+                    <button onclick="updateCapital()" class="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-semibold transition-all">
+                        ✅ Confirmer
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Debug Console -->
         <div class="glass-effect rounded-xl p-6 mb-6 border-2 border-cyan-500/50">
             <div class="flex justify-between items-center mb-4">
@@ -97,7 +128,7 @@
                 </button>
             </div>
             <div id="debugConsole" class="bg-black/70 rounded-lg p-4 h-48 overflow-y-auto font-mono text-xs border border-cyan-500/30">
-                <p class="text-cyan-400">✅ Bot initialisé</p>
+                <p class="text-cyan-400">✅ Bot initialisé - Profit min: 3%</p>
             </div>
         </div>
 
@@ -121,14 +152,34 @@
             </div>
         </div>
 
-        <!-- Capital -->
+        <!-- Capital Section -->
         <div id="capitalSection" class="glass-effect rounded-xl p-6 mb-6 border-2 border-green-500 hidden">
-            <h3 class="text-xl font-bold mb-4">💰 Capital</h3>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">💰 Capital de Trading</h3>
+            </div>
             <div class="flex gap-4">
                 <input type="number" id="capitalInput" placeholder="Ex: 100" value="100" class="flex-1 glass-effect rounded-lg px-4 py-3 focus:outline-none focus:border-green-400 border-2 border-gray-600">
                 <button onclick="setCapital()" class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg font-semibold">
                     ✅ OK
                 </button>
+            </div>
+        </div>
+
+        <!-- Capital Info -->
+        <div id="capitalInfo" class="glass-effect rounded-xl p-6 mb-6 border-2 border-green-500/50 hidden">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-gray-400">Capital Initial</p>
+                    <p class="text-3xl font-bold text-green-400">$<span id="initialCapitalDisplay">100.00</span></p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openCapitalModal()" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 rounded-lg font-semibold">
+                        ✏️ Modifier
+                    </button>
+                    <button onclick="resetCapital()" class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg font-semibold">
+                        🔄 Reset
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -268,6 +319,9 @@
                             <label class="block text-xs text-gray-400 mb-1">Score min (%)</label>
                             <input type="number" id="minScore" value="75" min="50" max="100" step="5" class="w-full glass-effect rounded-lg px-3 py-2 text-sm">
                         </div>
+                        <div class="bg-green-500/20 border border-green-500 rounded-lg p-3">
+                            <p class="text-xs text-green-300 font-bold">✅ Profit minimum: 3%</p>
+                        </div>
                     </div>
                 </div>
 
@@ -285,18 +339,14 @@
     </div>
 
     <script>
-        // 📊 FONCTION DASHBOARD - LIEN VERCEL
+        // 📊 FONCTION DASHBOARD
         function openDashboard() {
-            // Sauvegarder l'état avant d'ouvrir
             saveState();
-            
-            // Ouvrir le dashboard Vercel
             window.open('https://dashboard-stats-pro.vercel.app/', '_blank');
-            
             debugLog('📊 Dashboard Vercel ouvert !', 'success');
         }
 
-        // 🔧 SAUVEGARDE/RESTAURATION DE L'ÉTAT
+        // 🔧 SAUVEGARDE/RESTAURATION
         function saveState() {
             try {
                 const saveData = {
@@ -313,7 +363,8 @@
                     entryFees: state.entryFees,
                     trades: state.trades.slice(0, 50),
                     botRunning: state.botRunning,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    lastUpdate: Date.now()
                 };
                 localStorage.setItem('botState', JSON.stringify(saveData));
             } catch (error) {
@@ -328,7 +379,7 @@
                     const data = JSON.parse(saved);
                     const age = (Date.now() - data.timestamp) / 1000 / 60;
                     
-                    if (age < 1440) { // 24h
+                    if (age < 1440) {
                         Object.assign(state, data);
                         debugLog(`✅ État restauré (${age.toFixed(0)}min ago)`, 'success');
                         return true;
@@ -342,7 +393,7 @@
             return false;
         }
 
-        // 🔧 RPCs BSC avec backup
+        // 🔧 RPCs BSC
         const BSC_RPCS = [
             'https://bsc-dataseed.binance.org',
             'https://bsc-dataseed1.defibit.io',
@@ -461,7 +512,8 @@
             entryFees: 0,
             lastMacdHist: 0,
             isTrading: false,
-            lastTradeTime: 0
+            lastTradeTime: 0,
+            minProfitPct: 3.0  // 🎯 PROFIT MIN 3%
         };
 
         let ws = null;
@@ -483,21 +535,20 @@
         }
 
         function clearDebugLog() {
-            document.getElementById('debugConsole').innerHTML = '<p class="text-cyan-400">✅ Console effacée</p>';
+            document.getElementById('debugConsole').innerHTML = '<p class="text-cyan-400">✅ Console effacée - Profit min: 3%</p>';
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             debugLog('🚀 Bot Trading PRO initialisé', 'success');
+            debugLog('🎯 Profit minimum: 3%', 'success');
             debugLog('📊 Dashboard: https://dashboard-stats-pro.vercel.app/', 'info');
             initChart();
             loadCryptos();
             
-            // Restaurer état
             if (loadState()) {
                 updateUI();
             }
             
-            // Sauvegarder toutes les 10 secondes
             setInterval(saveState, 10000);
             
             if (window.ethereum) {
@@ -561,6 +612,87 @@
 
         function togglePrivateKeyModal() {
             document.getElementById('privateKeyModal').classList.toggle('hidden');
+        }
+
+        function openCapitalModal() {
+            if (state.botRunning) {
+                alert('❌ Arrêtez le bot avant de modifier le capital');
+                return;
+            }
+            
+            document.getElementById('currentCapitalModal').textContent = state.tradingCapital.toFixed(2);
+            document.getElementById('newCapitalInput').value = state.tradingCapital.toFixed(2);
+            document.getElementById('capitalModal').classList.remove('hidden');
+        }
+
+        function closeCapitalModal() {
+            document.getElementById('capitalModal').classList.add('hidden');
+        }
+
+        function updateCapital() {
+            const newCap = parseFloat(document.getElementById('newCapitalInput').value);
+            
+            if (!newCap || newCap <= 0) {
+                alert('❌ Montant invalide');
+                return;
+            }
+            
+            if (state.botRunning) {
+                alert('❌ Arrêtez le bot avant de modifier le capital');
+                return;
+            }
+            
+            if (state.currentPosition) {
+                alert('❌ Fermez votre position avant de modifier le capital');
+                return;
+            }
+            
+            const oldCapital = state.tradingCapital;
+            state.tradingCapital = newCap;
+            state.initialCapital = newCap;
+            
+            debugLog(`✅ Capital modifié: ${oldCapital.toFixed(2)} → ${newCap.toFixed(2)} USDT`, 'success');
+            
+            closeCapitalModal();
+            updateUI();
+            saveState();
+            
+            alert(`✅ Capital mis à jour: ${newCap} USDT`);
+        }
+
+        function resetCapital() {
+            if (state.botRunning) {
+                alert('❌ Arrêtez le bot avant de réinitialiser');
+                return;
+            }
+            
+            if (!confirm('⚠️ Voulez-vous vraiment réinitialiser? Cela effacera tous les trades et statistiques.')) {
+                return;
+            }
+            
+            state.capitalSet = false;
+            state.tradingCapital = 0;
+            state.initialCapital = 0;
+            state.trades = [];
+            state.portfolio = { profit: 0, wins: 0, losses: 0, bestTrade: 0, worstTrade: 0 };
+            state.currentPosition = null;
+            state.lastBuyPrice = 0;
+            state.positionAmount = 0;
+            state.entryFees = 0;
+            
+            document.getElementById('capitalSection').classList.remove('hidden');
+            document.getElementById('capitalInfo').classList.add('hidden');
+            document.getElementById('statsCards').classList.add('hidden');
+            document.getElementById('tradesContainer').innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <span class="text-4xl">⚡</span>
+                    <p>Aucun trade</p>
+                </div>
+            `;
+            
+            debugLog('🔄 Capital et statistiques réinitialisés', 'warning');
+            updateUI();
+            saveState();
         }
 
         async function connectWallet() {
@@ -887,9 +1019,14 @@
             state.initialCapital = cap;
             state.capitalSet = true;
             debugLog(`✅ Capital: ${cap} USDT`, 'success');
+            
+            document.getElementById('capitalSection').classList.add('hidden');
+            document.getElementById('capitalInfo').classList.remove('hidden');
+            document.getElementById('initialCapitalDisplay').textContent = cap.toFixed(2);
+            
             updateUI();
             saveState();
-            alert(`✅ Capital: ${cap} USDT`);
+            alert(`✅ Capital défini: ${cap} USDT`);
         }
 
         function toggleBot() {
@@ -914,6 +1051,7 @@
             debugLog('🚀 BOT DÉMARRÉ', 'success');
             debugLog(`💰 Capital: ${state.tradingCapital} USDT`, 'info');
             debugLog(`📊 Mode: ${state.tradingMode}`, 'warning');
+            debugLog(`🎯 Profit minimum: ${state.minProfitPct}%`, 'success');
             
             botInterval = setInterval(() => {
                 if (state.priceHistory.length < 50) {
@@ -962,6 +1100,12 @@
                 
                 const dynamicTP = atrPct * tpMult;
                 const dynamicSL = -atrPct * slMult;
+                
+                // 🎯 VÉRIFICATION PROFIT MIN 3%
+                if (profitPct >= state.minProfitPct) {
+                    debugLog(`💎 Profit atteint: ${profitPct.toFixed(2)}% (min: ${state.minProfitPct}%)`, 'success');
+                    return { signal: 'SELL', score: 100, reason: `Profit +${profitPct.toFixed(2)}%` };
+                }
                 
                 if (profitPct <= dynamicSL) {
                     return { signal: 'SELL', score: 100, reason: `SL ${dynamicSL.toFixed(2)}%` };
@@ -1021,8 +1165,8 @@
             let executionPrice = state.currentPrice;
             let netProfit = 0;
             let actualFees = 0;
+            let profitPct = 0;
             
-            // MODE RÉEL - PANCAKESWAP
             if (state.tradingMode === 'real' && state.wallet) {
                 try {
                     const network = await state.provider.getNetwork();
@@ -1148,7 +1292,6 @@
                     return;
                 }
             } else {
-                // MODE SIMULATION
                 if (tradeType === 'BUY') {
                     actualFees = tradeAmount * 0.0025 + 0.30;
                     
@@ -1182,17 +1325,32 @@
                 debugLog(`💰 Capital libre: ${state.tradingCapital.toFixed(2)} USDT`, 'info');
                 
             } else {
-                const profitPct = ((executionPrice - state.lastBuyPrice) / state.lastBuyPrice) * 100;
-                const grossProfit = state.positionAmount * (profitPct / 100);
-                netProfit = grossProfit - actualFees - state.entryFees;
+                // 🎯 CALCUL CORRIGÉ DU PROFIT
+                profitPct = ((executionPrice - state.lastBuyPrice) / state.lastBuyPrice) * 100;
+                
+                // Valeur actuelle de la position
+                const currentPositionValue = state.positionAmount * (executionPrice / state.lastBuyPrice);
+                
+                // Profit brut = valeur actuelle - montant initial
+                const grossProfit = currentPositionValue - state.positionAmount;
+                
+                // Profit net = profit brut - frais de sortie
+                // (les frais d'entrée sont déjà déduits de positionAmount)
+                netProfit = grossProfit - actualFees;
+                
+                // Total des frais pour info
                 const totalFees = actualFees + state.entryFees;
                 
-                state.tradingCapital += state.positionAmount + grossProfit - actualFees;
+                // Capital final = capital libre + valeur position - frais sortie
+                state.tradingCapital += currentPositionValue - actualFees;
                 
                 debugLog(`📉 POSITION FERMÉE`, netProfit >= 0 ? 'success' : 'error');
-                debugLog(`💰 Profit brut: ${grossProfit.toFixed(2)} USDT`, 'info');
-                debugLog(`💸 Frais: ${totalFees.toFixed(2)} USDT`, 'warning');
-                debugLog(`💎 NET: ${netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)} USDT`, netProfit >= 0 ? 'success' : 'error');
+                debugLog(`📊 Prix entrée: $${state.lastBuyPrice.toFixed(2)}`, 'info');
+                debugLog(`📊 Prix sortie: $${executionPrice.toFixed(2)} (${profitPct >= 0 ? '+' : ''}${profitPct.toFixed(2)}%)`, 'info');
+                debugLog(`💵 Valeur position: ${currentPositionValue.toFixed(2)} USDT`, 'info');
+                debugLog(`💰 Profit brut: ${grossProfit >= 0 ? '+' : ''}${grossProfit.toFixed(2)} USDT`, grossProfit >= 0 ? 'success' : 'error');
+                debugLog(`💸 Frais totaux: ${totalFees.toFixed(2)} USDT (entrée: ${state.entryFees.toFixed(2)} + sortie: ${actualFees.toFixed(2)})`, 'warning');
+                debugLog(`💎 Profit NET: ${netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)} USDT`, netProfit >= 0 ? 'success' : 'error');
                 debugLog(`💰 Capital total: ${state.tradingCapital.toFixed(2)} USDT`, 'info');
                 
                 state.currentPosition = null;
@@ -1201,9 +1359,8 @@
                 if (netProfit > 0) state.portfolio.wins++;
                 else state.portfolio.losses++;
                 
-                const netProfitPct = (netProfit / state.positionAmount) * 100;
-                if (netProfitPct > state.portfolio.bestTrade) state.portfolio.bestTrade = netProfitPct;
-                if (netProfitPct < state.portfolio.worstTrade) state.portfolio.worstTrade = netProfitPct;
+                if (profitPct > state.portfolio.bestTrade) state.portfolio.bestTrade = profitPct;
+                if (profitPct < state.portfolio.worstTrade) state.portfolio.worstTrade = profitPct;
                 state.portfolio.profit += netProfit;
             }
             
@@ -1214,7 +1371,7 @@
                 amount: tradeAmount.toFixed(2),
                 price: executionPrice.toFixed(2),
                 profit: netProfit.toFixed(2),
-                profitPct: tradeType === 'SELL' ? ((netProfit / state.positionAmount) * 100).toFixed(2) : '0',
+                profitPct: tradeType === 'SELL' ? profitPct.toFixed(2) : '0',  // ✅ CORRIGÉ
                 fees: actualFees.toFixed(2),
                 reason: reason,
                 score: score
@@ -1245,12 +1402,12 @@
                         <p class="text-xs text-gray-400 mt-1">${t.time}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm font-mono">${t.price}</p>
+                        <p class="text-sm font-mono">$${t.price}</p>
                         ${t.type === 'SELL' ? `
-                            <p class="text-lg font-bold ${parseFloat(t.profit) >= 0 ? 'text-green-400' : 'text-red-400'}">
-                                ${parseFloat(t.profit) >= 0 ? '+' : ''}${t.profit}
+                            <p class="text-lg font-bold ${parseFloat(t.profitPct) >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                ${parseFloat(t.profitPct) >= 0 ? '+' : ''}${t.profitPct}%
                             </p>
-                            <p class="text-xs text-gray-400">Frais: ${t.fees}</p>
+                            <p class="text-xs ${parseFloat(t.profit) >= 0 ? 'text-green-400' : 'text-red-400'}">${parseFloat(t.profit) >= 0 ? '+' : ''}${t.profit} USDT</p>
                         ` : '<p class="text-sm text-gray-400">Ouvert</p>'}
                     </div>
                 </div>
@@ -1266,7 +1423,9 @@
             
             if (state.capitalSet) {
                 document.getElementById('capitalSection').classList.add('hidden');
+                document.getElementById('capitalInfo').classList.remove('hidden');
                 document.getElementById('statsCards').classList.remove('hidden');
+                document.getElementById('initialCapitalDisplay').textContent = state.initialCapital.toFixed(2);
                 
                 const totalCapital = state.currentPosition ? 
                     state.tradingCapital + state.positionAmount + state.entryFees : 
