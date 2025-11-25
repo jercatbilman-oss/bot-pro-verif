@@ -45,6 +45,10 @@
                 </div>
                 
                 <div class="flex gap-2">
+                    <button onclick="openDashboard()" class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg">
+                        <span>📊</span>
+                        <span>Dashboard</span>
+                    </button>
                     <button onclick="connectWallet()" id="connectBtn" class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg">
                         <span>👛</span>
                         <span id="walletText">MetaMask</span>
@@ -281,6 +285,63 @@
     </div>
 
     <script>
+        // 📊 FONCTION DASHBOARD - LIEN VERCEL
+        function openDashboard() {
+            // Sauvegarder l'état avant d'ouvrir
+            saveState();
+            
+            // Ouvrir le dashboard Vercel
+            window.open('https://dashboard-stats-pro.vercel.app/', '_blank');
+            
+            debugLog('📊 Dashboard Vercel ouvert !', 'success');
+        }
+
+        // 🔧 SAUVEGARDE/RESTAURATION DE L'ÉTAT
+        function saveState() {
+            try {
+                const saveData = {
+                    account: state.account,
+                    tradingCapital: state.tradingCapital,
+                    initialCapital: state.initialCapital,
+                    capitalSet: state.capitalSet,
+                    tradingMode: state.tradingMode,
+                    selectedCrypto: state.selectedCrypto,
+                    portfolio: state.portfolio,
+                    currentPosition: state.currentPosition,
+                    lastBuyPrice: state.lastBuyPrice,
+                    positionAmount: state.positionAmount,
+                    entryFees: state.entryFees,
+                    trades: state.trades.slice(0, 50),
+                    botRunning: state.botRunning,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('botState', JSON.stringify(saveData));
+            } catch (error) {
+                debugLog(`⚠️ Erreur sauvegarde: ${error.message}`, 'warning');
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('botState');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    const age = (Date.now() - data.timestamp) / 1000 / 60;
+                    
+                    if (age < 1440) { // 24h
+                        Object.assign(state, data);
+                        debugLog(`✅ État restauré (${age.toFixed(0)}min ago)`, 'success');
+                        return true;
+                    } else {
+                        debugLog('⚠️ État trop ancien, ignoré', 'warning');
+                    }
+                }
+            } catch (error) {
+                debugLog(`⚠️ Erreur restauration: ${error.message}`, 'warning');
+            }
+            return false;
+        }
+
         // 🔧 RPCs BSC avec backup
         const BSC_RPCS = [
             'https://bsc-dataseed.binance.org',
@@ -292,26 +353,24 @@
         
         const PANCAKESWAP_ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
         const WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
-        const USDT = '0x55d398326f99059fF775485246999027B3197955'; // Binance-Peg BSC-USD
+        const USDT = '0x55d398326f99059fF775485246999027B3197955';
         
-        // Adresses des tokens sur BSC
         const TOKEN_ADDRESSES = {
-            'BTCUSDT': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', // BTCB
-            'ETHUSDT': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', // ETH
-            'BNBUSDT': WBNB // BNB
+            'BTCUSDT': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+            'ETHUSDT': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+            'BNBUSDT': WBNB
         };
         
         function getTokenAddress(symbol) {
             return TOKEN_ADDRESSES[symbol] || WBNB;
         }
         
-        // 🔧 Fonction pour obtenir un provider avec retry
         async function getProvider(useBackup = false) {
             const rpcUrl = useBackup ? BSC_RPCS[currentRpcIndex] : BSC_RPCS[0];
             const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
             
             try {
-                await provider.getBlockNumber(); // Test de connexion
+                await provider.getBlockNumber();
                 debugLog(`✅ RPC OK: ${rpcUrl}`, 'success');
                 return provider;
             } catch (error) {
@@ -325,20 +384,17 @@
             }
         }
         
-        // 🔧 Fonction améliorée pour vérifier le solde USDT
         async function getUSDTBalance(address, provider, retries = 3) {
             for (let i = 0; i < retries; i++) {
                 try {
-                    // Attendre un peu avant chaque tentative (sauf la première)
                     if (i > 0) {
-                        const delay = 1500 * i; // Délai progressif: 1.5s, 3s
+                        const delay = 1500 * i;
                         debugLog(`⏳ Attente ${(delay/1000).toFixed(1)}s avant retry...`, 'info');
                         await new Promise(resolve => setTimeout(resolve, delay));
                     }
                     
                     debugLog(`🔄 Vérification solde USDT (tentative ${i + 1}/${retries})...`, 'info');
                     
-                    // Vérifier d'abord que le provider est sur le bon réseau
                     const network = await provider.getNetwork();
                     if (network.chainId !== 56) {
                         debugLog(`⚠️ Mauvais réseau détecté: ${network.chainId}`, 'warning');
@@ -432,10 +488,18 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             debugLog('🚀 Bot Trading PRO initialisé', 'success');
+            debugLog('📊 Dashboard: https://dashboard-stats-pro.vercel.app/', 'info');
             initChart();
             loadCryptos();
             
-            // 🔧 Écouter les changements de réseau MetaMask
+            // Restaurer état
+            if (loadState()) {
+                updateUI();
+            }
+            
+            // Sauvegarder toutes les 10 secondes
+            setInterval(saveState, 10000);
+            
             if (window.ethereum) {
                 window.ethereum.on('chainChanged', (chainId) => {
                     debugLog(`🔄 Réseau changé: ${parseInt(chainId, 16)}`, 'warning');
@@ -446,7 +510,6 @@
                     } else {
                         debugLog('✅ Réseau BSC confirmé', 'success');
                         
-                        // Recréer le provider si connecté
                         if (state.isConnected && state.connectionMethod === 'metamask') {
                             state.provider = new ethers.providers.Web3Provider(window.ethereum);
                             state.wallet = state.provider.getSigner();
@@ -455,7 +518,6 @@
                     }
                 });
                 
-                // Écouter les changements de compte
                 window.ethereum.on('accountsChanged', (accounts) => {
                     if (accounts.length === 0) {
                         debugLog('❌ MetaMask déconnecté', 'error');
@@ -511,25 +573,19 @@
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 state.account = accounts[0];
                 
-                // Créer provider temporaire pour vérifier le réseau
                 let tempProvider = new ethers.providers.Web3Provider(window.ethereum);
                 const network = await tempProvider.getNetwork();
                 
-                // Vérifier et changer le réseau AVANT de créer le provider final
                 if (network.chainId !== 56) {
                     debugLog('⚠️ Mauvais réseau! Basculement vers BSC...', 'warning');
                     try {
                         await window.ethereum.request({
                             method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x38' }], // BSC = 56 = 0x38
+                            params: [{ chainId: '0x38' }],
                         });
                         debugLog('✅ Basculé vers BSC', 'success');
-                        
-                        // Attendre un peu que le changement soit effectif
                         await new Promise(resolve => setTimeout(resolve, 1000));
-                        
                     } catch (switchError) {
-                        // Si le réseau n'existe pas, le proposer
                         if (switchError.code === 4902) {
                             debugLog('🔄 Ajout du réseau BSC...', 'info');
                             try {
@@ -552,30 +608,24 @@
                             } catch (addError) {
                                 debugLog(`❌ Erreur ajout réseau: ${addError.message}`, 'error');
                             }
-                        } else {
-                            debugLog(`❌ Erreur changement réseau: ${switchError.message}`, 'error');
                         }
                     }
                 }
                 
-                // RECRÉER le provider APRÈS le changement de réseau
                 state.provider = new ethers.providers.Web3Provider(window.ethereum);
                 state.wallet = state.provider.getSigner();
                 state.isConnected = true;
                 state.connectionMethod = 'metamask';
                 
-                // Vérifier qu'on est bien sur BSC
                 const finalNetwork = await state.provider.getNetwork();
                 debugLog(`✅ Connecté sur ${finalNetwork.name} (ChainID: ${finalNetwork.chainId})`, 'success');
                 debugLog(`✅ Wallet: ${state.account.slice(0, 6)}...`, 'success');
                 
-                // Afficher solde USDT avec retry
                 try {
                     const usdtData = await getUSDTBalance(state.account, state.provider);
                     debugLog(`💵 USDT: ${usdtData.formatted.toFixed(2)} USDT`, 'success');
                 } catch (error) {
                     debugLog(`⚠️ Impossible de récupérer solde USDT: ${error.message}`, 'warning');
-                    debugLog('💡 Le bot fonctionnera en mode simulation si besoin', 'info');
                 }
                 
                 showConfig();
@@ -593,7 +643,6 @@
             try {
                 debugLog('🔄 Connexion clé privée...', 'info');
                 
-                // Obtenir un provider fonctionnel avec retry
                 state.provider = await getProvider();
                 
                 const key = pk.startsWith('0x') ? pk : '0x' + pk;
@@ -604,7 +653,6 @@
                 
                 debugLog(`✅ Connecté: ${state.account.slice(0, 6)}...`, 'success');
                 
-                // Afficher solde BNB
                 try {
                     const bnbBal = await state.provider.getBalance(state.account);
                     debugLog(`💰 BNB: ${parseFloat(ethers.utils.formatEther(bnbBal)).toFixed(4)} BNB`, 'info');
@@ -612,13 +660,11 @@
                     debugLog(`⚠️ Erreur solde BNB: ${error.message}`, 'warning');
                 }
                 
-                // Solde USDT avec retry
                 try {
                     const usdtData = await getUSDTBalance(state.account, state.provider);
                     debugLog(`💵 USDT: ${usdtData.formatted.toFixed(2)} USDT`, 'success');
                 } catch (error) {
                     debugLog(`⚠️ Impossible de récupérer solde USDT: ${error.message}`, 'warning');
-                    debugLog('💡 Le bot fonctionnera en mode simulation si besoin', 'info');
                 }
                 
                 togglePrivateKeyModal();
@@ -842,6 +888,7 @@
             state.capitalSet = true;
             debugLog(`✅ Capital: ${cap} USDT`, 'success');
             updateUI();
+            saveState();
             alert(`✅ Capital: ${cap} USDT`);
         }
 
@@ -940,7 +987,7 @@
             
             const now = Date.now();
             const timeSinceLastTrade = (now - state.lastTradeTime) / 1000;
-            if (timeSinceLastTrade < 10) {
+            if (timeSinceLastTrade < 10 && state.lastTradeTime > 0) {
                 debugLog(`⏳ Cooldown: ${(10 - timeSinceLastTrade).toFixed(0)}s`, 'warning');
                 return;
             }
@@ -978,7 +1025,6 @@
             // MODE RÉEL - PANCAKESWAP
             if (state.tradingMode === 'real' && state.wallet) {
                 try {
-                    // 🔒 VÉRIFIER LE RÉSEAU AVANT CHAQUE TRADE
                     const network = await state.provider.getNetwork();
                     if (network.chainId !== 56) {
                         debugLog(`❌ Mauvais réseau: ${network.chainId}. BSC (56) requis!`, 'error');
@@ -989,7 +1035,6 @@
                     debugLog(`✅ Réseau BSC confirmé`, 'success');
                     
                     if (tradeType === 'BUY') {
-                        // Vérifier solde USDT avec retry
                         const usdtData = await getUSDTBalance(state.account, state.provider);
                         
                         if (usdtData.formatted < tradeAmount) {
@@ -1000,12 +1045,10 @@
                         }
                         
                         debugLog('🔄 Achat avec USDT sur PancakeSwap...', 'warning');
-                        debugLog(`💵 Solde USDT: ${usdtData.formatted.toFixed(2)} USDT`, 'info');
                         
                         const tokenAddress = getTokenAddress(state.selectedCrypto);
                         const amountIn = ethers.utils.parseUnits(tradeAmount.toFixed(2), usdtData.decimals);
                         
-                        // 1. Approve USDT
                         const usdtContract = new ethers.Contract(
                             USDT,
                             ['function approve(address spender, uint256 amount) public returns (bool)'],
@@ -1017,7 +1060,6 @@
                         await approveTx.wait();
                         debugLog('✅ USDT approuvé', 'success');
                         
-                        // 2. Swap USDT → Token
                         const router = new ethers.Contract(
                             PANCAKESWAP_ROUTER,
                             ['function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)'],
@@ -1027,18 +1069,15 @@
                         let path;
                         if (state.selectedCrypto === 'BNBUSDT') {
                             path = [USDT, WBNB];
-                            debugLog(`🔄 Swap USDT → WBNB...`, 'info');
                         } else {
                             path = [USDT, WBNB, tokenAddress];
-                            debugLog(`🔄 Swap USDT → WBNB → ${state.selectedCrypto}...`, 'info');
                         }
                         
                         const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-                        const amountOutMin = 0;
                         
                         const tx = await router.swapExactTokensForTokens(
                             amountIn,
-                            amountOutMin,
+                            0,
                             path,
                             state.account,
                             deadline,
@@ -1060,7 +1099,6 @@
                         const tokenAmount = state.positionAmount / state.lastBuyPrice;
                         const amountIn = ethers.utils.parseUnits(tokenAmount.toFixed(8), 18);
                         
-                        // 1. Approve Token
                         const tokenContract = new ethers.Contract(
                             tokenAddress,
                             ['function approve(address spender, uint256 amount) public returns (bool)'],
@@ -1072,7 +1110,6 @@
                         await approveTx.wait();
                         debugLog('✅ Token approuvé', 'success');
                         
-                        // 2. Swap Token → USDT
                         const router = new ethers.Contract(
                             PANCAKESWAP_ROUTER,
                             ['function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)'],
@@ -1082,10 +1119,8 @@
                         let path;
                         if (state.selectedCrypto === 'BNBUSDT') {
                             path = [WBNB, USDT];
-                            debugLog(`🔄 Swap WBNB → USDT...`, 'info');
                         } else {
                             path = [tokenAddress, WBNB, USDT];
-                            debugLog(`🔄 Swap ${state.selectedCrypto} → WBNB → USDT...`, 'info');
                         }
                         
                         const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
@@ -1194,6 +1229,7 @@
             renderTrades();
             updateChart();
             updateUI();
+            saveState();
         }
 
         function renderTrades() {
