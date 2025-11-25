@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Trading PRO - Indicateurs Optimisés | Crypto 2025</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #10b981, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% auto;
+            animation: gradient 3s linear infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+    </style>
+</head>
+<body class="text-white p-4 md:p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="glass-effect rounded-2xl p-6 mb-6 border-2 border-purple-500/50">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-4xl font-bold gradient-text mb-2">
+                        🚀 Bot Trading PRO - Optimisé 2025
+                    </h1>
+                    <p class="text-gray-400">
+                        ⚡ RSI+MACD+Bollinger • 🎯 TP Dynamique • 📈 Balance OK
+                    </p>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button onclick="connectWallet()" id="connectBtn" class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg">
+                        <span>👛</span>
+                        <span id="walletText">MetaMask</span>
+                    </button>
+                    <button onclick="togglePrivateKeyModal()" class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg">
+                        <span>🔑</span>
+                        <span>Clé Privée</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Private Key Modal -->
+        <div id="privateKeyModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="glass-effect rounded-2xl p-6 max-w-md w-full border-2 border-red-500/50">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-red-400">⚠️ Clé Privée</h3>
+                    <button onclick="togglePrivateKeyModal()" class="text-2xl hover:text-red-400">✕</button>
+                </div>
+                
+                <div class="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-red-300">
+                        <strong>ATTENTION:</strong> Ne partagez JAMAIS votre clé privée.
+                    </p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Clé Privée</label>
+                        <input type="password" id="privateKeyInput" placeholder="0x..." class="w-full glass-effect rounded-lg px-4 py-3 focus:outline-none focus:border-red-400 border-2 border-gray-600 font-mono text-sm">
+                    </div>
+                    
+                    <button onclick="connectWithPrivateKey()" class="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-lg font-semibold transition-all">
+                        🔓 Connecter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Console -->
+        <div class="glass-effect rounded-xl p-6 mb-6 border-2 border-cyan-500/50">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">🔍 Console</h3>
+                <button onclick="clearDebugLog()" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm">
+                    🗑️ Effacer
+                </button>
+            </div>
+            <div id="debugConsole" class="bg-black/70 rounded-lg p-4 h-48 overflow-y-auto font-mono text-xs border border-cyan-500/30">
+                <p class="text-cyan-400">✅ Bot initialisé</p>
+            </div>
+        </div>
+
+        <!-- Crypto Selector -->
+        <div id="cryptoSelector" class="glass-effect rounded-xl p-6 mb-6 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Crypto</label>
+                    <select id="cryptoSelect" onchange="changeCrypto()" class="w-full glass-effect rounded-lg px-4 py-3 focus:outline-none focus:border-purple-400 text-lg font-semibold cursor-pointer">
+                        <option>Chargement...</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Mode</label>
+                    <select id="tradingMode" onchange="changeTradingMode()" class="w-full glass-effect rounded-lg px-4 py-3 focus:outline-none focus:border-purple-400 text-lg font-semibold cursor-pointer">
+                        <option value="simulation">🎮 Simulation</option>
+                        <option value="real" selected>💎 Réel</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capital -->
+        <div id="capitalSection" class="glass-effect rounded-xl p-6 mb-6 border-2 border-green-500 hidden">
+            <h3 class="text-xl font-bold mb-4">💰 Capital</h3>
+            <div class="flex gap-4">
+                <input type="number" id="capitalInput" placeholder="Ex: 100" value="100" class="flex-1 glass-effect rounded-lg px-4 py-3 focus:outline-none focus:border-green-400 border-2 border-gray-600">
+                <button onclick="setCapital()" class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg font-semibold">
+                    ✅ OK
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div id="statsCards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 hidden">
+            <div class="glass-effect rounded-xl p-4 border border-green-500/30">
+                <p class="text-xs text-gray-400">Capital</p>
+                <p class="text-2xl font-bold text-green-400">$<span id="capitalDisplay">0</span></p>
+            </div>
+            
+            <div class="glass-effect rounded-xl p-4 border border-blue-500/30">
+                <p class="text-xs text-gray-400">Prix</p>
+                <p class="text-2xl font-bold">$<span id="currentPrice">...</span></p>
+            </div>
+            
+            <div class="glass-effect rounded-xl p-4 border border-purple-500/30">
+                <p class="text-xs text-gray-400">Profit</p>
+                <p class="text-2xl font-bold text-green-400">$<span id="profitDisplay">0</span></p>
+            </div>
+            
+            <div class="glass-effect rounded-xl p-4 border border-yellow-500/30">
+                <p class="text-xs text-gray-400">Win Rate</p>
+                <p class="text-2xl font-bold" id="winRateDisplay">0%</p>
+            </div>
+        </div>
+
+        <!-- Signals -->
+        <div class="glass-effect rounded-xl p-6 mb-6">
+            <h3 class="text-xl font-bold mb-4">⚡ Signaux (≥75%)</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <div class="glass-effect border-2 border-slate-600 rounded-lg p-3" id="signal-trend">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold">EMA</span>
+                        <span class="text-2xl" id="signal-trend-icon">⚪</span>
+                    </div>
+                    <p class="text-xs mt-1 font-mono" id="trend-display">--</p>
+                </div>
+
+                <div class="glass-effect border-2 border-slate-600 rounded-lg p-3" id="signal-rsi">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold">RSI</span>
+                        <span class="text-2xl" id="signal-rsi-icon">⚪</span>
+                    </div>
+                    <p class="text-xs mt-1 font-mono" id="rsi-display">--</p>
+                </div>
+
+                <div class="glass-effect border-2 border-slate-600 rounded-lg p-3" id="signal-macd">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold">MACD</span>
+                        <span class="text-2xl" id="signal-macd-icon">⚪</span>
+                    </div>
+                    <p class="text-xs mt-1 font-mono" id="macd-display">--</p>
+                </div>
+
+                <div class="glass-effect border-2 border-slate-600 rounded-lg p-3" id="signal-bollinger">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold">BB</span>
+                        <span class="text-2xl" id="signal-bollinger-icon">⚪</span>
+                    </div>
+                    <p class="text-xs mt-1 font-mono" id="bollinger-display">--</p>
+                </div>
+
+                <div class="glass-effect border-2 border-slate-600 rounded-lg p-3" id="signal-volume">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold">Volume</span>
+                        <span class="text-2xl" id="signal-volume-icon">⚪</span>
+                    </div>
+                    <p class="text-xs mt-1 font-mono" id="volume-display">--</p>
+                </div>
+
+                <div class="glass-effect border-2 border-slate-600 rounded-lg p-3" id="signal-volatility">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold">ATR</span>
+                        <span class="text-2xl" id="signal-volatility-icon">⚪</span>
+                    </div>
+                    <p class="text-xs mt-1 font-mono" id="volatility-display">--</p>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-green-500/20 to-blue-500/20 border-2 border-green-500 rounded-xl p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-lg font-bold">
+                        Score: <span class="text-green-400 text-2xl" id="signal-score">0%</span>
+                    </p>
+                </div>
+                <div class="w-full h-4 bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 transition-all duration-300" id="signal-progress" style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-gray-400 mt-2 text-center" id="signal-status">En attente...</p>
+            </div>
+        </div>
+
+        <!-- Chart & Controls -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="glass-effect rounded-xl p-6">
+                    <h2 class="text-xl font-bold mb-4">📈 Graphique</h2>
+                    <div class="h-48">
+                        <canvas id="tradingChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-effect rounded-xl p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">📋 Trades</h2>
+                        <button onclick="toggleBot()" id="toggleBotBtn" disabled class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gray-600 cursor-not-allowed">
+                            <span id="botIcon">▶️</span>
+                            <span id="botText">Start</span>
+                        </button>
+                    </div>
+                    <div id="tradesContainer">
+                        <div class="text-center py-8 text-gray-400">
+                            <span class="text-4xl">⚡</span>
+                            <p>Aucun trade</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="glass-effect rounded-xl p-6">
+                    <h2 class="text-xl font-bold mb-4">⚙️ Paramètres</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">% par trade</label>
+                            <input type="number" id="tradePercent" value="10" min="1" max="100" class="w-full glass-effect rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">TP Mult</label>
+                            <input type="number" id="tpMultiplier" value="3" min="1.5" max="5" step="0.25" class="w-full glass-effect rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">SL Mult</label>
+                            <input type="number" id="slMultiplier" value="1.5" min="0.5" max="3" step="0.25" class="w-full glass-effect rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Score min (%)</label>
+                            <input type="number" id="minScore" value="75" min="50" max="100" step="5" class="w-full glass-effect rounded-lg px-3 py-2 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-3">📊 Statut</h3>
+                    <div class="space-y-2 text-sm">
+                        <p>Wallet: <span id="walletStatus">🔴 Non</span></p>
+                        <p>Mode: <span id="modeStatus">--</span></p>
+                        <p>Position: <span id="positionStatus">⚪ None</span></p>
+                        <p>Trades: <span id="tradesCount">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔧 RPCs BSC avec backup
+        const BSC_RPCS = [
+            'https://bsc-dataseed.binance.org',
+            'https://bsc-dataseed1.defibit.io',
+            'https://bsc-dataseed1.ninicoin.io',
+            'https://rpc.ankr.com/bsc'
+        ];
+        let currentRpcIndex = 0;
+        
+        const PANCAKESWAP_ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
+        const WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
+        const USDT = '0x55d398326f99059fF775485246999027B3197955'; // Binance-Peg BSC-USD
+        
+        // Adresses des tokens sur BSC
+        const TOKEN_ADDRESSES = {
+            'BTCUSDT': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', // BTCB
+            'ETHUSDT': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', // ETH
+            'BNBUSDT': WBNB // BNB
+        };
+        
+        function getTokenAddress(symbol) {
+            return TOKEN_ADDRESSES[symbol] || WBNB;
+        }
+        
+        // 🔧 Fonction pour obtenir un provider avec retry
+        async function getProvider(useBackup = false) {
+            const rpcUrl = useBackup ? BSC_RPCS[currentRpcIndex] : BSC_RPCS[0];
+            const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+            
+            try {
+                await provider.getBlockNumber(); // Test de connexion
+                debugLog(`✅ RPC OK: ${rpcUrl}`, 'success');
+                return provider;
+            } catch (error) {
+                debugLog(`❌ RPC fail: ${rpcUrl}`, 'error');
+                if (currentRpcIndex < BSC_RPCS.length - 1) {
+                    currentRpcIndex++;
+                    debugLog(`🔄 Essai backup RPC ${currentRpcIndex + 1}/${BSC_RPCS.length}...`, 'warning');
+                    return getProvider(true);
+                }
+                throw new Error('Tous les RPCs ont échoué');
+            }
+        }
+        
+        // 🔧 Fonction améliorée pour vérifier le solde USDT
+        async function getUSDTBalance(address, provider, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    // Attendre un peu avant chaque tentative (sauf la première)
+                    if (i > 0) {
+                        const delay = 1500 * i; // Délai progressif: 1.5s, 3s
+                        debugLog(`⏳ Attente ${(delay/1000).toFixed(1)}s avant retry...`, 'info');
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                    
+                    debugLog(`🔄 Vérification solde USDT (tentative ${i + 1}/${retries})...`, 'info');
+                    
+                    // Vérifier d'abord que le provider est sur le bon réseau
+                    const network = await provider.getNetwork();
+                    if (network.chainId !== 56) {
+                        debugLog(`⚠️ Mauvais réseau détecté: ${network.chainId}`, 'warning');
+                        throw new Error('Provider not on BSC network');
+                    }
+                    
+                    const usdtContract = new ethers.Contract(
+                        USDT,
+                        [
+                            'function balanceOf(address) view returns (uint256)',
+                            'function decimals() view returns (uint8)'
+                        ],
+                        provider
+                    );
+                    
+                    const [balance, decimals] = await Promise.all([
+                        usdtContract.balanceOf(address),
+                        usdtContract.decimals()
+                    ]);
+                    
+                    debugLog(`✅ Solde récupéré (decimals: ${decimals})`, 'success');
+                    
+                    return {
+                        balance: balance,
+                        formatted: parseFloat(ethers.utils.formatUnits(balance, decimals)),
+                        decimals: decimals
+                    };
+                } catch (error) {
+                    const isLastAttempt = i === retries - 1;
+                    const errorMsg = error.message.includes('underlying network') ? 
+                        'Changement de réseau détecté' : error.message;
+                    
+                    debugLog(`⚠️ Erreur (${i + 1}/${retries}): ${errorMsg}`, 'warning');
+                    
+                    if (isLastAttempt) {
+                        throw error;
+                    }
+                }
+            }
+        }
+        
+        let state = {
+            account: null,
+            wallet: null,
+            provider: null,
+            isConnected: false,
+            connectionMethod: null,
+            selectedCrypto: 'BTCUSDT',
+            currentPrice: 0,
+            priceHistory: [],
+            volumeHistory: [],
+            tradingCapital: 0,
+            initialCapital: 0,
+            capitalSet: false,
+            tradingMode: 'real',
+            botRunning: false,
+            trades: [],
+            portfolio: { profit: 0, wins: 0, losses: 0, bestTrade: 0, worstTrade: 0 },
+            indicators: { ema9: 0, ema21: 0, ema50: 0, rsi: 50, macd: 0, macdHist: 0, bbUpper: 0, bbLower: 0, atr: 0, volume: 0, volumeAvg: 0 },
+            signals: { trend: false, rsi: false, macd: false, bollinger: false, volume: false, volatility: false },
+            currentPosition: null,
+            lastBuyPrice: 0,
+            positionAmount: 0,
+            entryFees: 0,
+            lastMacdHist: 0,
+            isTrading: false,
+            lastTradeTime: 0
+        };
+
+        let ws = null;
+        let botInterval = null;
+        let chart = null;
+
+        function debugLog(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString('fr-FR');
+            const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : type === 'warning' ? 'text-yellow-400' : 'text-cyan-400';
+            const console = document.getElementById('debugConsole');
+            if (console) {
+                const p = document.createElement('p');
+                p.className = color;
+                p.textContent = `[${time}] ${msg}`;
+                console.appendChild(p);
+                console.scrollTop = console.scrollHeight;
+                if (console.children.length > 50) console.removeChild(console.firstChild);
+            }
+        }
+
+        function clearDebugLog() {
+            document.getElementById('debugConsole').innerHTML = '<p class="text-cyan-400">✅ Console effacée</p>';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            debugLog('🚀 Bot Trading PRO initialisé', 'success');
+            initChart();
+            loadCryptos();
+            
+            // 🔧 Écouter les changements de réseau MetaMask
+            if (window.ethereum) {
+                window.ethereum.on('chainChanged', (chainId) => {
+                    debugLog(`🔄 Réseau changé: ${parseInt(chainId, 16)}`, 'warning');
+                    
+                    if (parseInt(chainId, 16) !== 56) {
+                        debugLog('⚠️ Vous devez être sur BSC (ChainID 56)!', 'warning');
+                        alert('⚠️ Veuillez rester sur le réseau Binance Smart Chain (BSC)');
+                    } else {
+                        debugLog('✅ Réseau BSC confirmé', 'success');
+                        
+                        // Recréer le provider si connecté
+                        if (state.isConnected && state.connectionMethod === 'metamask') {
+                            state.provider = new ethers.providers.Web3Provider(window.ethereum);
+                            state.wallet = state.provider.getSigner();
+                            debugLog('✅ Provider mis à jour', 'success');
+                        }
+                    }
+                });
+                
+                // Écouter les changements de compte
+                window.ethereum.on('accountsChanged', (accounts) => {
+                    if (accounts.length === 0) {
+                        debugLog('❌ MetaMask déconnecté', 'error');
+                        state.isConnected = false;
+                        updateUI();
+                    } else if (accounts[0] !== state.account) {
+                        debugLog(`🔄 Compte changé: ${accounts[0].slice(0, 6)}...`, 'warning');
+                        state.account = accounts[0];
+                        updateUI();
+                    }
+                });
+            }
+        });
+
+        function initChart() {
+            const ctx = document.getElementById('tradingChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Prix',
+                        data: [],
+                        borderColor: 'rgb(139, 92, 246)',
+                        tension: 0.4,
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: true, grid: { color: 'rgba(139, 92, 246, 0.1)' }, ticks: { color: 'rgb(156, 163, 175)' } }
+                    }
+                }
+            });
+        }
+
+        function togglePrivateKeyModal() {
+            document.getElementById('privateKeyModal').classList.toggle('hidden');
+        }
+
+        async function connectWallet() {
+            if (!window.ethereum) {
+                alert('❌ MetaMask non installé');
+                return;
+            }
+            try {
+                debugLog('🔄 Connexion MetaMask...', 'info');
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                state.account = accounts[0];
+                
+                // Créer provider temporaire pour vérifier le réseau
+                let tempProvider = new ethers.providers.Web3Provider(window.ethereum);
+                const network = await tempProvider.getNetwork();
+                
+                // Vérifier et changer le réseau AVANT de créer le provider final
+                if (network.chainId !== 56) {
+                    debugLog('⚠️ Mauvais réseau! Basculement vers BSC...', 'warning');
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x38' }], // BSC = 56 = 0x38
+                        });
+                        debugLog('✅ Basculé vers BSC', 'success');
+                        
+                        // Attendre un peu que le changement soit effectif
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        
+                    } catch (switchError) {
+                        // Si le réseau n'existe pas, le proposer
+                        if (switchError.code === 4902) {
+                            debugLog('🔄 Ajout du réseau BSC...', 'info');
+                            try {
+                                await window.ethereum.request({
+                                    method: 'wallet_addEthereumChain',
+                                    params: [{
+                                        chainId: '0x38',
+                                        chainName: 'Binance Smart Chain',
+                                        nativeCurrency: {
+                                            name: 'BNB',
+                                            symbol: 'BNB',
+                                            decimals: 18
+                                        },
+                                        rpcUrls: ['https://bsc-dataseed1.binance.org'],
+                                        blockExplorerUrls: ['https://bscscan.com']
+                                    }]
+                                });
+                                debugLog('✅ Réseau BSC ajouté', 'success');
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+                            } catch (addError) {
+                                debugLog(`❌ Erreur ajout réseau: ${addError.message}`, 'error');
+                            }
+                        } else {
+                            debugLog(`❌ Erreur changement réseau: ${switchError.message}`, 'error');
+                        }
+                    }
+                }
+                
+                // RECRÉER le provider APRÈS le changement de réseau
+                state.provider = new ethers.providers.Web3Provider(window.ethereum);
+                state.wallet = state.provider.getSigner();
+                state.isConnected = true;
+                state.connectionMethod = 'metamask';
+                
+                // Vérifier qu'on est bien sur BSC
+                const finalNetwork = await state.provider.getNetwork();
+                debugLog(`✅ Connecté sur ${finalNetwork.name} (ChainID: ${finalNetwork.chainId})`, 'success');
+                debugLog(`✅ Wallet: ${state.account.slice(0, 6)}...`, 'success');
+                
+                // Afficher solde USDT avec retry
+                try {
+                    const usdtData = await getUSDTBalance(state.account, state.provider);
+                    debugLog(`💵 USDT: ${usdtData.formatted.toFixed(2)} USDT`, 'success');
+                } catch (error) {
+                    debugLog(`⚠️ Impossible de récupérer solde USDT: ${error.message}`, 'warning');
+                    debugLog('💡 Le bot fonctionnera en mode simulation si besoin', 'info');
+                }
+                
+                showConfig();
+            } catch (error) {
+                debugLog(`❌ Erreur: ${error.message}`, 'error');
+            }
+        }
+
+        async function connectWithPrivateKey() {
+            const pk = document.getElementById('privateKeyInput').value.trim();
+            if (!pk) {
+                alert('❌ Entrez votre clé');
+                return;
+            }
+            try {
+                debugLog('🔄 Connexion clé privée...', 'info');
+                
+                // Obtenir un provider fonctionnel avec retry
+                state.provider = await getProvider();
+                
+                const key = pk.startsWith('0x') ? pk : '0x' + pk;
+                state.wallet = new ethers.Wallet(key, state.provider);
+                state.account = state.wallet.address;
+                state.isConnected = true;
+                state.connectionMethod = 'privatekey';
+                
+                debugLog(`✅ Connecté: ${state.account.slice(0, 6)}...`, 'success');
+                
+                // Afficher solde BNB
+                try {
+                    const bnbBal = await state.provider.getBalance(state.account);
+                    debugLog(`💰 BNB: ${parseFloat(ethers.utils.formatEther(bnbBal)).toFixed(4)} BNB`, 'info');
+                } catch (error) {
+                    debugLog(`⚠️ Erreur solde BNB: ${error.message}`, 'warning');
+                }
+                
+                // Solde USDT avec retry
+                try {
+                    const usdtData = await getUSDTBalance(state.account, state.provider);
+                    debugLog(`💵 USDT: ${usdtData.formatted.toFixed(2)} USDT`, 'success');
+                } catch (error) {
+                    debugLog(`⚠️ Impossible de récupérer solde USDT: ${error.message}`, 'warning');
+                    debugLog('💡 Le bot fonctionnera en mode simulation si besoin', 'info');
+                }
+                
+                togglePrivateKeyModal();
+                document.getElementById('privateKeyInput').value = '';
+                showConfig();
+            } catch (error) {
+                debugLog(`❌ Erreur connexion: ${error.message}`, 'error');
+                alert(`❌ Erreur: ${error.message}`);
+            }
+        }
+
+        function showConfig() {
+            document.getElementById('cryptoSelector').classList.remove('hidden');
+            document.getElementById('capitalSection').classList.remove('hidden');
+            updateUI();
+        }
+
+        function loadCryptos() {
+            const cryptos = [
+                { symbol: 'BTCUSDT', name: 'BTC' },
+                { symbol: 'ETHUSDT', name: 'ETH' },
+                { symbol: 'BNBUSDT', name: 'BNB' }
+            ];
+            document.getElementById('cryptoSelect').innerHTML = cryptos.map(c => 
+                `<option value="${c.symbol}">${c.name}</option>`
+            ).join('');
+            state.selectedCrypto = cryptos[0].symbol;
+            connectWebSocket();
+        }
+
+        function changeCrypto() {
+            state.selectedCrypto = document.getElementById('cryptoSelect').value;
+            state.priceHistory = [];
+            debugLog(`🔄 Crypto: ${state.selectedCrypto}`, 'info');
+            connectWebSocket();
+        }
+
+        function changeTradingMode() {
+            state.tradingMode = document.getElementById('tradingMode').value;
+            debugLog(`🔄 Mode: ${state.tradingMode}`, 'warning');
+            updateUI();
+        }
+
+        function connectWebSocket() {
+            if (ws) ws.close();
+            const symbol = state.selectedCrypto.toLowerCase();
+            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@ticker`);
+            
+            ws.onopen = () => debugLog(`🟢 WebSocket: ${state.selectedCrypto}`, 'success');
+            
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                state.currentPrice = parseFloat(data.c);
+                state.indicators.volume = parseFloat(data.v);
+                
+                state.priceHistory.push(state.currentPrice);
+                state.volumeHistory.push(state.indicators.volume);
+                
+                if (state.priceHistory.length > 200) state.priceHistory.shift();
+                if (state.volumeHistory.length > 50) state.volumeHistory.shift();
+                
+                if (state.priceHistory.length >= 50) updateIndicators();
+                if (state.priceHistory.length % 5 === 0) updateChart();
+                
+                document.getElementById('currentPrice').textContent = state.currentPrice.toFixed(2);
+            };
+        }
+
+        function calculateEMA(prices, period) {
+            if (prices.length === 0) return 0;
+            const k = 2 / (period + 1);
+            let ema = prices[0];
+            for (let i = 1; i < prices.length; i++) {
+                ema = (prices[i] - ema) * k + ema;
+            }
+            return ema;
+        }
+
+        function calculateRSI(prices, period = 14) {
+            if (prices.length < period + 1) return 50;
+            let gains = 0, losses = 0;
+            for (let i = prices.length - period; i < prices.length; i++) {
+                const change = prices[i] - prices[i - 1];
+                if (change > 0) gains += change;
+                else losses -= change;
+            }
+            const avgGain = gains / period;
+            const avgLoss = losses / period;
+            if (avgLoss === 0) return 100;
+            return 100 - (100 / (1 + avgGain / avgLoss));
+        }
+
+        function calculateMACD(prices) {
+            if (prices.length < 26) return { macd: 0, hist: 0 };
+            const ema12 = calculateEMA(prices, 12);
+            const ema26 = calculateEMA(prices, 26);
+            const macd = ema12 - ema26;
+            const macdLine = [];
+            for (let i = 26; i <= prices.length; i++) {
+                const slice = prices.slice(0, i);
+                const e12 = calculateEMA(slice, 12);
+                const e26 = calculateEMA(slice, 26);
+                macdLine.push(e12 - e26);
+            }
+            const signal = calculateEMA(macdLine, 9);
+            return { macd, hist: macd - signal };
+        }
+
+        function calculateBB(prices, period = 20, stdDev = 2) {
+            if (prices.length < period) return { upper: 0, lower: 0 };
+            const slice = prices.slice(-period);
+            const avg = slice.reduce((a, b) => a + b, 0) / period;
+            const variance = slice.reduce((sum, p) => sum + Math.pow(p - avg, 2), 0) / period;
+            const std = Math.sqrt(variance);
+            return {
+                upper: avg + (std * stdDev),
+                lower: avg - (std * stdDev)
+            };
+        }
+
+        function calculateATR(prices, period = 14) {
+            if (prices.length < period + 1) return 0;
+            let sum = 0;
+            for (let i = prices.length - period; i < prices.length; i++) {
+                const high = prices[i] * 1.01;
+                const low = prices[i] * 0.99;
+                const prev = i > 0 ? prices[i - 1] : prices[i];
+                sum += Math.max(high - low, Math.abs(high - prev), Math.abs(low - prev));
+            }
+            return sum / period;
+        }
+
+        function updateIndicators() {
+            if (state.priceHistory.length < 50) return;
+            
+            state.indicators.ema9 = calculateEMA(state.priceHistory, 9);
+            state.indicators.ema21 = calculateEMA(state.priceHistory, 21);
+            state.indicators.ema50 = calculateEMA(state.priceHistory, 50);
+            state.indicators.rsi = calculateRSI(state.priceHistory, 14);
+            
+            const macd = calculateMACD(state.priceHistory);
+            state.lastMacdHist = state.indicators.macdHist;
+            state.indicators.macd = macd.macd;
+            state.indicators.macdHist = macd.hist;
+            
+            const bb = calculateBB(state.priceHistory, 20, 2);
+            state.indicators.bbUpper = bb.upper;
+            state.indicators.bbLower = bb.lower;
+            state.indicators.atr = calculateATR(state.priceHistory, 14);
+            
+            if (state.volumeHistory.length >= 20) {
+                state.indicators.volumeAvg = state.volumeHistory.slice(-20).reduce((a, b) => a + b, 0) / 20;
+            }
+            
+            updateSignals();
+        }
+
+        function updateSignals() {
+            const { ema9, ema21, ema50, rsi, macdHist, bbUpper, bbLower, volume, volumeAvg, atr } = state.indicators;
+            
+            state.signals.trend = ema9 > ema21 && ema21 > ema50;
+            state.signals.rsi = rsi >= 25 && rsi <= 45;
+            state.signals.macd = macdHist > 0 && state.lastMacdHist <= 0;
+            
+            const distBB = ((state.currentPrice - bbLower) / bbLower) * 100;
+            state.signals.bollinger = distBB >= -0.5 && distBB <= 2;
+            
+            state.signals.volume = volume > volumeAvg * 1.5;
+            
+            const atrPct = (atr / state.currentPrice) * 100;
+            state.signals.volatility = atrPct > 1 && atrPct < 4;
+            
+            updateSignalUI('trend', state.signals.trend, `${ema9.toFixed(2)}`);
+            updateSignalUI('rsi', state.signals.rsi, `${rsi.toFixed(1)}`);
+            updateSignalUI('macd', state.signals.macd, `${macdHist.toFixed(4)}`);
+            updateSignalUI('bollinger', state.signals.bollinger, `${distBB.toFixed(2)}%`);
+            updateSignalUI('volume', state.signals.volume, `${volumeAvg > 0 ? (volume / volumeAvg * 100).toFixed(0) : 100}%`);
+            updateSignalUI('volatility', state.signals.volatility, `${atrPct.toFixed(2)}%`);
+            
+            const signals = Object.values(state.signals);
+            const score = Math.round((signals.filter(s => s).length / signals.length) * 100);
+            const minScore = parseInt(document.getElementById('minScore').value);
+            
+            document.getElementById('signal-score').textContent = score + '%';
+            document.getElementById('signal-progress').style.width = score + '%';
+            document.getElementById('signal-status').textContent = score >= minScore ? '✅ Signal BUY!' : `⏳ ${score}%`;
+        }
+
+        function updateSignalUI(name, isValid, value) {
+            const icon = document.getElementById(`signal-${name}-icon`);
+            const display = document.getElementById(`${name}-display`);
+            const container = document.getElementById(`signal-${name}`);
+            if (icon) icon.textContent = isValid ? '✅' : '⚪';
+            if (display) display.textContent = value;
+            if (container) {
+                container.className = isValid ? 'bg-green-500/30 border-2 border-green-500 rounded-lg p-3' : 'glass-effect border-2 border-slate-600 rounded-lg p-3';
+            }
+        }
+
+        function updateChart() {
+            if (!chart || state.priceHistory.length === 0) return;
+            const maxPoints = 50;
+            const prices = state.priceHistory.slice(-maxPoints);
+            const labels = prices.map((_, i) => {
+                const date = new Date(Date.now() - (maxPoints - i) * 10000);
+                return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            });
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = prices;
+            chart.update('none');
+        }
+
+        function setCapital() {
+            const cap = parseFloat(document.getElementById('capitalInput').value);
+            if (!cap || cap <= 0) {
+                alert('❌ Montant invalide');
+                return;
+            }
+            state.tradingCapital = cap;
+            state.initialCapital = cap;
+            state.capitalSet = true;
+            debugLog(`✅ Capital: ${cap} USDT`, 'success');
+            updateUI();
+            alert(`✅ Capital: ${cap} USDT`);
+        }
+
+        function toggleBot() {
+            if (!state.isConnected) {
+                alert('❌ Connectez wallet');
+                return;
+            }
+            if (!state.capitalSet) {
+                alert('❌ Définissez capital');
+                return;
+            }
+            state.botRunning = !state.botRunning;
+            if (state.botRunning) {
+                startBot();
+            } else {
+                stopBot();
+            }
+            updateUI();
+        }
+
+        function startBot() {
+            debugLog('🚀 BOT DÉMARRÉ', 'success');
+            debugLog(`💰 Capital: ${state.tradingCapital} USDT`, 'info');
+            debugLog(`📊 Mode: ${state.tradingMode}`, 'warning');
+            
+            botInterval = setInterval(() => {
+                if (state.priceHistory.length < 50) {
+                    debugLog(`⏳ Collecte: ${state.priceHistory.length}/50`, 'warning');
+                    return;
+                }
+                
+                updateIndicators();
+                const signal = getTradeSignal();
+                
+                if (signal.signal) {
+                    executeTrade(signal.signal, signal.score, signal.reason);
+                }
+            }, 3000);
+        }
+
+        function stopBot() {
+            if (botInterval) {
+                clearInterval(botInterval);
+                botInterval = null;
+                debugLog('🛑 BOT ARRÊTÉ', 'warning');
+                const ret = ((state.tradingCapital - state.initialCapital) / state.initialCapital * 100);
+                debugLog(`📊 Performance: ${ret >= 0 ? '+' : ''}${ret.toFixed(2)}%`, ret >= 0 ? 'success' : 'error');
+            }
+        }
+
+        function getTradeSignal() {
+            const minScore = parseInt(document.getElementById('minScore').value);
+            
+            if (!state.currentPosition) {
+                const signals = Object.values(state.signals);
+                const score = Math.round((signals.filter(s => s).length / signals.length) * 100);
+                if (score >= minScore) {
+                    const reasons = [];
+                    if (state.signals.trend) reasons.push('EMA↑');
+                    if (state.signals.rsi) reasons.push(`RSI:${state.indicators.rsi.toFixed(0)}`);
+                    if (state.signals.macd) reasons.push('MACD✓');
+                    return { signal: 'BUY', score, reason: reasons.join('|') };
+                }
+                return { signal: null, score: 0 };
+            } else {
+                const profitPct = ((state.currentPrice - state.lastBuyPrice) / state.lastBuyPrice) * 100;
+                const atrPct = (state.indicators.atr / state.lastBuyPrice) * 100;
+                const tpMult = parseFloat(document.getElementById('tpMultiplier').value);
+                const slMult = parseFloat(document.getElementById('slMultiplier').value);
+                
+                const dynamicTP = atrPct * tpMult;
+                const dynamicSL = -atrPct * slMult;
+                
+                if (profitPct <= dynamicSL) {
+                    return { signal: 'SELL', score: 100, reason: `SL ${dynamicSL.toFixed(2)}%` };
+                }
+                
+                if (profitPct >= dynamicTP) {
+                    return { signal: 'SELL', score: 100, reason: `TP +${dynamicTP.toFixed(2)}%` };
+                }
+                
+                if (state.indicators.rsi > 75 && profitPct > 0.5) {
+                    return { signal: 'SELL', score: 100, reason: `RSI:${state.indicators.rsi.toFixed(0)}` };
+                }
+                
+                return { signal: null, score: 0 };
+            }
+        }
+
+        async function executeTrade(tradeType, score, reason) {
+            if (state.isTrading) {
+                debugLog('⏳ Trade en cours, veuillez patienter...', 'warning');
+                return;
+            }
+            
+            const now = Date.now();
+            const timeSinceLastTrade = (now - state.lastTradeTime) / 1000;
+            if (timeSinceLastTrade < 10) {
+                debugLog(`⏳ Cooldown: ${(10 - timeSinceLastTrade).toFixed(0)}s`, 'warning');
+                return;
+            }
+            
+            const percent = parseFloat(document.getElementById('tradePercent').value);
+            const tradeAmount = (state.tradingCapital * percent) / 100;
+            
+            if (tradeType === 'BUY') {
+                if (tradeAmount > state.tradingCapital) {
+                    debugLog(`❌ Capital insuffisant: ${state.tradingCapital.toFixed(2)} USDT`, 'error');
+                    return;
+                }
+                debugLog(`✅ Capital OK: ${state.tradingCapital.toFixed(2)} USDT`, 'success');
+            }
+            
+            if (tradeType === 'BUY' && state.currentPosition) {
+                debugLog(`⚠️ Position déjà ouverte`, 'warning');
+                return;
+            }
+            
+            if (tradeType === 'SELL' && !state.currentPosition) {
+                debugLog(`⚠️ Aucune position`, 'warning');
+                return;
+            }
+            
+            state.isTrading = true;
+            
+            debugLog(`${tradeType === 'BUY' ? '🟢' : '🔴'} ${tradeType} - ${reason}`, tradeType === 'BUY' ? 'success' : 'warning');
+            debugLog(`💰 Montant: ${tradeAmount.toFixed(2)} USDT`, 'info');
+            
+            let executionPrice = state.currentPrice;
+            let netProfit = 0;
+            let actualFees = 0;
+            
+            // MODE RÉEL - PANCAKESWAP
+            if (state.tradingMode === 'real' && state.wallet) {
+                try {
+                    // 🔒 VÉRIFIER LE RÉSEAU AVANT CHAQUE TRADE
+                    const network = await state.provider.getNetwork();
+                    if (network.chainId !== 56) {
+                        debugLog(`❌ Mauvais réseau: ${network.chainId}. BSC (56) requis!`, 'error');
+                        alert('❌ Vous devez être sur le réseau BSC pour trader!');
+                        state.isTrading = false;
+                        return;
+                    }
+                    debugLog(`✅ Réseau BSC confirmé`, 'success');
+                    
+                    if (tradeType === 'BUY') {
+                        // Vérifier solde USDT avec retry
+                        const usdtData = await getUSDTBalance(state.account, state.provider);
+                        
+                        if (usdtData.formatted < tradeAmount) {
+                            debugLog(`❌ USDT insuffisant: ${usdtData.formatted.toFixed(2)} < ${tradeAmount.toFixed(2)}`, 'error');
+                            alert(`❌ USDT insuffisant!\nVous avez: ${usdtData.formatted.toFixed(2)} USDT\nNécessaire: ${tradeAmount.toFixed(2)} USDT`);
+                            state.isTrading = false;
+                            return;
+                        }
+                        
+                        debugLog('🔄 Achat avec USDT sur PancakeSwap...', 'warning');
+                        debugLog(`💵 Solde USDT: ${usdtData.formatted.toFixed(2)} USDT`, 'info');
+                        
+                        const tokenAddress = getTokenAddress(state.selectedCrypto);
+                        const amountIn = ethers.utils.parseUnits(tradeAmount.toFixed(2), usdtData.decimals);
+                        
+                        // 1. Approve USDT
+                        const usdtContract = new ethers.Contract(
+                            USDT,
+                            ['function approve(address spender, uint256 amount) public returns (bool)'],
+                            state.wallet
+                        );
+                        
+                        debugLog('🔄 Approve USDT...', 'info');
+                        const approveTx = await usdtContract.approve(PANCAKESWAP_ROUTER, amountIn);
+                        await approveTx.wait();
+                        debugLog('✅ USDT approuvé', 'success');
+                        
+                        // 2. Swap USDT → Token
+                        const router = new ethers.Contract(
+                            PANCAKESWAP_ROUTER,
+                            ['function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)'],
+                            state.wallet
+                        );
+                        
+                        let path;
+                        if (state.selectedCrypto === 'BNBUSDT') {
+                            path = [USDT, WBNB];
+                            debugLog(`🔄 Swap USDT → WBNB...`, 'info');
+                        } else {
+                            path = [USDT, WBNB, tokenAddress];
+                            debugLog(`🔄 Swap USDT → WBNB → ${state.selectedCrypto}...`, 'info');
+                        }
+                        
+                        const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+                        const amountOutMin = 0;
+                        
+                        const tx = await router.swapExactTokensForTokens(
+                            amountIn,
+                            amountOutMin,
+                            path,
+                            state.account,
+                            deadline,
+                            { gasLimit: 350000 }
+                        );
+                        
+                        debugLog(`⏳ TX: ${tx.hash.slice(0, 10)}...`, 'info');
+                        const receipt = await tx.wait();
+                        debugLog(`✅ Confirmé! Gas: ${receipt.gasUsed.toString()}`, 'success');
+                        
+                        const gasCost = parseFloat(ethers.utils.formatEther(receipt.gasUsed.mul(tx.gasPrice)));
+                        actualFees = (tradeAmount * 0.0025) + gasCost;
+                        executionPrice = state.currentPrice;
+                        
+                    } else {
+                        debugLog('🔄 Vente Token → USDT...', 'warning');
+                        
+                        const tokenAddress = getTokenAddress(state.selectedCrypto);
+                        const tokenAmount = state.positionAmount / state.lastBuyPrice;
+                        const amountIn = ethers.utils.parseUnits(tokenAmount.toFixed(8), 18);
+                        
+                        // 1. Approve Token
+                        const tokenContract = new ethers.Contract(
+                            tokenAddress,
+                            ['function approve(address spender, uint256 amount) public returns (bool)'],
+                            state.wallet
+                        );
+                        
+                        debugLog('🔄 Approve Token...', 'info');
+                        const approveTx = await tokenContract.approve(PANCAKESWAP_ROUTER, amountIn);
+                        await approveTx.wait();
+                        debugLog('✅ Token approuvé', 'success');
+                        
+                        // 2. Swap Token → USDT
+                        const router = new ethers.Contract(
+                            PANCAKESWAP_ROUTER,
+                            ['function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)'],
+                            state.wallet
+                        );
+                        
+                        let path;
+                        if (state.selectedCrypto === 'BNBUSDT') {
+                            path = [WBNB, USDT];
+                            debugLog(`🔄 Swap WBNB → USDT...`, 'info');
+                        } else {
+                            path = [tokenAddress, WBNB, USDT];
+                            debugLog(`🔄 Swap ${state.selectedCrypto} → WBNB → USDT...`, 'info');
+                        }
+                        
+                        const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+                        
+                        const tx = await router.swapExactTokensForTokens(
+                            amountIn,
+                            0,
+                            path,
+                            state.account,
+                            deadline,
+                            { gasLimit: 350000 }
+                        );
+                        
+                        debugLog(`⏳ TX: ${tx.hash.slice(0, 10)}...`, 'info');
+                        const receipt = await tx.wait();
+                        debugLog(`✅ Vendu! Gas: ${receipt.gasUsed.toString()}`, 'success');
+                        
+                        const gasCost = parseFloat(ethers.utils.formatEther(receipt.gasUsed.mul(tx.gasPrice)));
+                        actualFees = (tradeAmount * 0.0025) + gasCost;
+                        executionPrice = state.currentPrice;
+                    }
+                } catch (error) {
+                    debugLog(`❌ Erreur swap: ${error.message}`, 'error');
+                    state.isTrading = false;
+                    return;
+                }
+            } else {
+                // MODE SIMULATION
+                if (tradeType === 'BUY') {
+                    actualFees = tradeAmount * 0.0025 + 0.30;
+                    
+                    if (tradeAmount > state.tradingCapital) {
+                        debugLog(`❌ Capital insuffisant: ${state.tradingCapital.toFixed(2)} < ${tradeAmount.toFixed(2)}`, 'error');
+                        state.isTrading = false;
+                        return;
+                    }
+                    
+                    state.tradingCapital -= tradeAmount;
+                    const slippage = Math.random() * 0.01;
+                    executionPrice = state.currentPrice * (1 + slippage);
+                    
+                    debugLog(`📊 Frais estimés: ${actualFees.toFixed(2)} USDT`, 'info');
+                    debugLog(`💰 Capital restant: ${state.tradingCapital.toFixed(2)} USDT`, 'info');
+                } else {
+                    actualFees = tradeAmount * 0.0025 + 0.30;
+                    const slippage = Math.random() * 0.01;
+                    executionPrice = state.currentPrice * (1 - slippage);
+                }
+            }
+            
+            if (tradeType === 'BUY') {
+                state.currentPosition = 'BUY';
+                state.lastBuyPrice = executionPrice;
+                state.positionAmount = tradeAmount - actualFees;
+                state.entryFees = actualFees;
+                
+                debugLog(`📈 POSITION OUVERTE`, 'success');
+                debugLog(`💵 Net: ${state.positionAmount.toFixed(2)} USDT`, 'info');
+                debugLog(`💰 Capital libre: ${state.tradingCapital.toFixed(2)} USDT`, 'info');
+                
+            } else {
+                const profitPct = ((executionPrice - state.lastBuyPrice) / state.lastBuyPrice) * 100;
+                const grossProfit = state.positionAmount * (profitPct / 100);
+                netProfit = grossProfit - actualFees - state.entryFees;
+                const totalFees = actualFees + state.entryFees;
+                
+                state.tradingCapital += state.positionAmount + grossProfit - actualFees;
+                
+                debugLog(`📉 POSITION FERMÉE`, netProfit >= 0 ? 'success' : 'error');
+                debugLog(`💰 Profit brut: ${grossProfit.toFixed(2)} USDT`, 'info');
+                debugLog(`💸 Frais: ${totalFees.toFixed(2)} USDT`, 'warning');
+                debugLog(`💎 NET: ${netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)} USDT`, netProfit >= 0 ? 'success' : 'error');
+                debugLog(`💰 Capital total: ${state.tradingCapital.toFixed(2)} USDT`, 'info');
+                
+                state.currentPosition = null;
+                state.entryFees = 0;
+                
+                if (netProfit > 0) state.portfolio.wins++;
+                else state.portfolio.losses++;
+                
+                const netProfitPct = (netProfit / state.positionAmount) * 100;
+                if (netProfitPct > state.portfolio.bestTrade) state.portfolio.bestTrade = netProfitPct;
+                if (netProfitPct < state.portfolio.worstTrade) state.portfolio.worstTrade = netProfitPct;
+                state.portfolio.profit += netProfit;
+            }
+            
+            const newTrade = {
+                id: Date.now(),
+                time: new Date().toLocaleTimeString('fr-FR'),
+                type: tradeType,
+                amount: tradeAmount.toFixed(2),
+                price: executionPrice.toFixed(2),
+                profit: netProfit.toFixed(2),
+                profitPct: tradeType === 'SELL' ? ((netProfit / state.positionAmount) * 100).toFixed(2) : '0',
+                fees: actualFees.toFixed(2),
+                reason: reason,
+                score: score
+            };
+            
+            state.trades.unshift(newTrade);
+            state.trades = state.trades.slice(0, 20);
+            
+            state.isTrading = false;
+            state.lastTradeTime = Date.now();
+            
+            renderTrades();
+            updateChart();
+            updateUI();
+        }
+
+        function renderTrades() {
+            if (state.trades.length === 0) return;
+            document.getElementById('tradesContainer').innerHTML = state.trades.map(t => `
+                <div class="flex justify-between p-3 glass-effect rounded-lg mb-2 border-l-4 ${t.type === 'BUY' ? 'border-green-500' : 'border-red-500'}">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="${t.type === 'BUY' ? 'text-green-400' : 'text-red-400'} text-xl">${t.type === 'BUY' ? '🟢' : '🔴'}</span>
+                            <span class="font-bold">${t.type}</span>
+                            <span class="text-xs bg-purple-400/20 px-2 py-1 rounded">${t.reason}</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">${t.time}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-mono">${t.price}</p>
+                        ${t.type === 'SELL' ? `
+                            <p class="text-lg font-bold ${parseFloat(t.profit) >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                ${parseFloat(t.profit) >= 0 ? '+' : ''}${t.profit}
+                            </p>
+                            <p class="text-xs text-gray-400">Frais: ${t.fees}</p>
+                        ` : '<p class="text-sm text-gray-400">Ouvert</p>'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateUI() {
+            if (state.isConnected) {
+                document.getElementById('connectBtn').className = 'flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all bg-green-600 hover:bg-green-700 shadow-lg';
+                document.getElementById('walletText').textContent = `${state.account.slice(0, 6)}...`;
+                document.getElementById('walletStatus').innerHTML = state.connectionMethod === 'privatekey' ? '🔴 Clé' : '🟢 MetaMask';
+            }
+            
+            if (state.capitalSet) {
+                document.getElementById('capitalSection').classList.add('hidden');
+                document.getElementById('statsCards').classList.remove('hidden');
+                
+                const totalCapital = state.currentPosition ? 
+                    state.tradingCapital + state.positionAmount + state.entryFees : 
+                    state.tradingCapital;
+                
+                document.getElementById('capitalDisplay').textContent = totalCapital.toFixed(2);
+                document.getElementById('toggleBotBtn').disabled = false;
+                document.getElementById('toggleBotBtn').className = state.botRunning ?
+                    'flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-red-600 hover:bg-red-700' :
+                    'flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-green-600 hover:bg-green-700';
+            }
+            
+            if (state.botRunning) {
+                document.getElementById('botIcon').textContent = '⏸️';
+                document.getElementById('botText').textContent = 'Stop';
+            } else {
+                document.getElementById('botIcon').textContent = '▶️';
+                document.getElementById('botText').textContent = 'Start';
+            }
+            
+            document.getElementById('modeStatus').innerHTML = state.tradingMode === 'real' ? '💎 RÉEL' : '🎮 SIM';
+            
+            if (state.currentPosition) {
+                const pct = ((state.currentPrice - state.lastBuyPrice) / state.lastBuyPrice) * 100;
+                document.getElementById('positionStatus').innerHTML = `🟢 ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+            } else {
+                document.getElementById('positionStatus').innerHTML = '⚪ None';
+            }
+            
+            document.getElementById('profitDisplay').textContent = state.portfolio.profit.toFixed(2);
+            document.getElementById('tradesCount').textContent = state.trades.length;
+            
+            const wr = state.portfolio.wins + state.portfolio.losses > 0 ?
+                Math.round(state.portfolio.wins / (state.portfolio.wins + state.portfolio.losses) * 100) : 0;
+            document.getElementById('winRateDisplay').textContent = wr + '%';
+        }
+    </script>
+</body>
+</html>
