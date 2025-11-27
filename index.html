@@ -406,8 +406,46 @@
             botRunning: false,
             trades: [],
             portfolio: { profit: 0, wins: 0, losses: 0 },
-            minProfitPct: 3.0
+            minProfitPct: 3.0,
+            jercatTrusted: false,  // 🔥 AUTO-APPROVE si vrai
+            connectionMethod: null
         };
+
+        // 🤖 FONCTION GLOBALE POUR ÉTABLIR LA CONFIANCE (appelée par JERCAT Wallet)
+        window.establishJercatTrust = function(appName) {
+            if (appName === 'jercat-bot' || appName === 'jercat-wallet' || appName === 'jercat-dex') {
+                state.jercatTrusted = true;
+                debugLog(`🤖 Confiance établie: ${appName}`, 'success');
+                debugLog('✅ Trades AUTO-APPROUVÉS (pas de validation)', 'success');
+                
+                // Mettre à jour l'UI pour montrer le statut
+                const statusDiv = document.getElementById('walletStatus');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<span class="text-green-400">🟢 JERCAT Auto ✅</span>';
+                }
+                return true;
+            }
+            return false;
+        };
+
+        // Détecter si ouvert depuis JERCAT Wallet
+        window.addEventListener('DOMContentLoaded', () => {
+            // Vérifier referrer
+            if (document.referrer.includes('wallet-one-ochre.vercel.app') || 
+                document.referrer.includes('jercat-wallet') ||
+                document.referrer.includes('localhost')) {
+                state.jercatTrusted = true;
+                debugLog('🤖 JERCAT Wallet détecté via referrer', 'success');
+                debugLog('✅ Mode AUTO-APPROVAL activé', 'success');
+            }
+            
+            // Vérifier window.opener
+            if (window.opener) {
+                state.jercatTrusted = true;
+                debugLog('🤖 Ouvert par JERCAT Wallet', 'success');
+                debugLog('✅ Mode AUTO-APPROVAL activé', 'success');
+            }
+        });
 
         let ws = null;
         let chart = null;
@@ -433,6 +471,8 @@
         window.addEventListener('DOMContentLoaded', () => {
             debugLog('🤖 JERCAT Trading Bot initialisé', 'success');
             debugLog('🎯 Profit minimum: 3%', 'success');
+            debugLog('🔗 Intégration JERCAT Wallet active', 'info');
+            debugLog('💡 Trades AUTO-APPROUVÉS si ouvert depuis JERCAT Wallet', 'info');
             initChart();
             loadCryptos();
         });
