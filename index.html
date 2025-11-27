@@ -18,18 +18,27 @@
             border: 1px solid #334155;
         }
         .gradient-text {
-            background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%);
+            background: linear-gradient(90deg, 
+                #10b981, /* Vert */
+                #3b82f6, /* Bleu */
+                #8b5cf6, /* Violet */
+                #ec4899, /* Rose */
+                #f59e0b, /* Orange */
+                #ef4444, /* Rouge */
+                #06b6d4, /* Cyan */
+                #84cc16, /* Lime */
+                #f97316, /* Orange vif */
+                #a855f7  /* Violet clair */
+            );
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-size: 300% 300%;
-            animation: gradient 4s ease infinite;
+            background-size: 1000% 1000%;
+            animation: gradient 30s linear infinite;
             font-weight: 900;
-            letter-spacing: -0.02em;
         }
         @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% { background-position: 0% center; }
+            100% { background-position: 1000% center; }
         }
         .btn-primary {
             background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
@@ -63,7 +72,7 @@
         <div class="glass-effect rounded-2xl p-6 mb-6 border-2 border-accent">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 class="text-5xl font-bold gradient-text mb-2" style="text-shadow: 0 0 30px rgba(245, 158, 11, 0.5), 0 0 60px rgba(245, 158, 11, 0.3);">
+                    <h1 class="text-5xl font-black gradient-text mb-2" style="text-shadow: 0 4px 8px rgba(0,0,0,0.8), 0 0 40px rgba(245, 158, 11, 0.6), 0 0 80px rgba(245, 158, 11, 0.4); transform: translateZ(0); filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.5));">
                         🚀 Bot Trading PRO - Optimisé 2025
                     </h1>
                     <p class="text-gray-400">
@@ -76,9 +85,40 @@
                         <span>🤖</span>
                         <span>JERCAT Wallet</span>
                     </button>
-                    <button onclick="connectWallet()" id="connectBtn" class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all btn-primary shadow-lg">
+                    <button onclick="connectWallet()" id="connectBtn" class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg">
                         <span>👛</span>
                         <span id="walletText">MetaMask</span>
+                    </button>
+                    <button onclick="togglePrivateKeyModal()" class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg">
+                        <span>🔑</span>
+                        <span>Clé Privée</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Private Key Modal -->
+        <div id="privateKeyModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="glass-effect rounded-2xl p-6 max-w-md w-full border-2 border-red-500/50">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-red-400">⚠️ Clé Privée</h3>
+                    <button onclick="togglePrivateKeyModal()" class="text-2xl hover:text-red-400">✕</button>
+                </div>
+                
+                <div class="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-red-300">
+                        <strong>ATTENTION:</strong> Ne partagez JAMAIS votre clé privée.
+                    </p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Clé Privée</label>
+                        <input type="password" id="privateKeyInput" placeholder="0x..." class="w-full glass-effect rounded-lg px-4 py-3 focus:outline-none focus:border-red-400 border-2 border-gray-600 font-mono text-sm text-white">
+                    </div>
+                    
+                    <button onclick="connectWithPrivateKey()" class="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-lg font-semibold transition-all">
+                        🔓 Connecter
                     </button>
                 </div>
             </div>
@@ -306,6 +346,41 @@
             debugLog('🤖 Ouverture du JERCAT Secure Wallet...', 'success');
             window.open('https://wallet-one-ochre.vercel.app/', '_blank', 'width=1200,height=800');
             debugLog('✅ Wallet ouvert dans une nouvelle fenêtre', 'info');
+        }
+
+        // Private Key Modal
+        function togglePrivateKeyModal() {
+            document.getElementById('privateKeyModal').classList.toggle('hidden');
+        }
+
+        async function connectWithPrivateKey() {
+            const pk = document.getElementById('privateKeyInput').value.trim();
+            if (!pk) {
+                alert('❌ Entrez votre clé privée');
+                return;
+            }
+            try {
+                debugLog('🔄 Connexion avec clé privée...', 'info');
+                
+                state.provider = new ethers.providers.JsonRpcProvider('https://bsc-dataseed.binance.org');
+                
+                const key = pk.startsWith('0x') ? pk : '0x' + pk;
+                state.wallet = new ethers.Wallet(key, state.provider);
+                state.account = state.wallet.address;
+                state.isConnected = true;
+                
+                debugLog(`✅ Connecté: ${state.account.slice(0, 6)}...`, 'success');
+                
+                togglePrivateKeyModal();
+                document.getElementById('privateKeyInput').value = '';
+                
+                document.getElementById('cryptoSelector').classList.remove('hidden');
+                document.getElementById('capitalSection').classList.remove('hidden');
+                updateUI();
+            } catch (error) {
+                debugLog(`❌ Erreur: ${error.message}`, 'error');
+                alert(`❌ Clé privée invalide`);
+            }
         }
 
         // [Tout le code JavaScript identique au bot original]
